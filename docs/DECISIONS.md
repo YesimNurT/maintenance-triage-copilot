@@ -18,5 +18,9 @@ Format: date · decision · why · evidence / number.
   the run fast; tests must mock Gemini and Pinecone anyway.
 
 ## Open
-- MVP issue classes (decide in F1 after counts).
-- Split unit: aircraft vs. event (decide in F1 after checking the header table).
+- MVP issue classes (decide in F1 after counts). Flight counts are in docs/DATA_CARD.md;
+  event counts per class still missing.
+- Split unit. Header audit 2026-10-02: the data has no aircraft id and no event id, so a
+  split by aircraft is not possible. Event audit 2026-10-02: row-order reconstruction
+  gives 9,387 groups against 2,111 reported events, so events are not recoverable this
+  way. Candidate: contiguous blocks of `Master Index` with a purge gap (not decided).
