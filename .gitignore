@@ -1,0 +1,31 @@
+# secrets
+.env
+.env.*
+!.env.example
+
+# data (4.3 GB raw; processed is reproducible from scripts)
+data/raw/
+data/processed/
+!data/sample/
+
+# experiment outputs
+results/*
+!results/.gitkeep
+
+# python
+.venv/
+__pycache__/
+*.py[cod]
+*.egg-info/
+dist/
+build/
+.pytest_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+
+# notebooks / editors / OS
+.ipynb_checkpoints/
+.vscode/
+.idea/
+.DS_Store
