@@ -16,11 +16,29 @@ Format: date · decision · why · evidence / number.
   `all_flight.tar.gz` 4.29 GB, `2days.tar.gz` 1.13 GB (Zenodo record API).
 - 2026-10-02 · CI installs core + dev dependencies only (no torch / agent extras) · keeps
   the run fast; tests must mock Gemini and Pinecone anyway.
+- 2026-10-03 · Split unit: flight. Benchmark flights keep their published fold (5 folds);
+  other flights get a fold by seeded random assignment stratified by label and
+  before/after. Fold 4 = test, fold 3 = val, folds 0–2 = train · the data has no aircraft
+  or event id (removed for privacy), row-order reconstruction gives 9,387 groups against
+  2,111 events, and neighbouring flights are no more alike than random ones (OAT median
+  difference 12.29 lag 1 vs 12.26 random), so no split can keep an event together;
+  reusing the folds keeps results comparable with the paper · `results/f1/*_audit.json`.
+- 2026-10-03 · Known limitation, stated in every result: flights of the same aircraft or
+  event can fall in different splits. Risk is lower for before/after (an event's flights
+  carry both labels) and higher for issue-class accuracy and case retrieval, which are
+  reported as upper bounds.
+- 2026-10-03 · Case retrieval sees only training-split cases (replaces "only cases dated
+  before the query": the data has no dates).
+- 2026-10-03 · Binary task definition (Gate 1 and F2): benchmark rule, before = −2 ≤
+  date_diff ≤ −1, after = 1 ≤ date_diff ≤ 2; "same" and day-0 flights excluded.
+- 2026-10-03 · Gate 1 criterion, fixed before seeing results: logistic regression on
+  per-flight summary features (train split) passes if the lower bound of the 95%
+  bootstrap CI of val AUC is above 0.55 and above the flight-length-only model. Test
+  split stays untouched until F6.
+- 2026-10-03 · Provisional (to be checked with `scripts/audit_channels.py`): plausible
+  value ranges per channel in `src/mtc/data/quality.py`, flight minimum 600 s, phase rules
+  in `src/mtc/data/phases.py`.
 
 ## Open
-- MVP issue classes (decide in F1 after counts). Flight counts are in docs/DATA_CARD.md;
-  event counts per class still missing.
-- Split unit. Header audit 2026-10-02: the data has no aircraft id and no event id, so a
-  split by aircraft is not possible. Event audit 2026-10-02: row-order reconstruction
-  gives 9,387 groups against 2,111 reported events, so events are not recoverable this
-  way. Candidate: contiguous blocks of `Master Index` with a purge gap (not decided).
+- MVP issue classes: decide after Gate 1, from per-label val AUC (which classes leave a
+  sensor trace). Event counts per class are not recoverable.

@@ -50,6 +50,18 @@ flights. Events cannot be recovered from row order with this rule.
 (`date_diff` down to −108); `number_flights_before` 1–4 occur about 2,030 times each and
 0 occurs 4,009 times, including flights on the maintenance day itself.
 
+Adjacency audit (`scripts/audit_adjacency.py`, 2026-10-03): per-flight means of OAT,
+volt1 and volt2 differ as much between neighbouring flights (same label) as between
+random flights of the same label (OAT median difference 12.29 at lag 1, 12.26 random;
+volt1 0.324 vs 0.326; volt2 0.263 vs 0.262), also inside the local groups. Row order
+within a label carries no measurable same-day or same-aircraft signal, so contiguous
+blocks of `Master Index` do not keep related flights together.
+
+Benchmark folds (`2days/flight_header.csv`): 96 runs along `Master Index`, 99.2% of
+neighbouring flights share a fold (0.2 if random), so the folds are contiguous blocks per
+class. Given the result above, they do not keep an event's or aircraft's flights together
+either; the published benchmark numbers may include that leakage.
+
 ## Aircraft / events / flights per class
 Aircraft and event counts cannot be read from the header (no ids). Flights per label,
 all flights:
@@ -78,7 +90,13 @@ Found so far (handling to be decided in the loading / quality task):
   normalisation (statistics come from the training split only).
 
 ## Flight-phase rules
-To be filled in F1.
+Provisional, `src/mtc/data/phases.py`: IAS and VSpd smoothed with a 15 s rolling median;
+ground if IAS < 50 kt, climb if VSpd > 300 ft/min, descent if VSpd < −300 ft/min,
+otherwise cruise; unknown if either signal is missing. To be checked with
+`scripts/audit_channels.py`.
 
 ## Split rule and resulting class distribution
-To be filled in F1.
+Unit is the flight (docs/DECISIONS.md, 2026-10-03). Benchmark flights keep their fold;
+the others get a seeded random fold stratified by label and before/after. Fold 4 = test,
+fold 3 = val, folds 0–2 = train. Counts per split: `results/f1/splits_summary.json`
+after `scripts/make_splits.py` (to be copied here).

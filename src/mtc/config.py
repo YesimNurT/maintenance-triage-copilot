@@ -21,6 +21,13 @@ class Settings(BaseSettings):
     zenodo_api_url: str = "https://zenodo.org/api"
     zenodo_record_id: str = "6624956"
 
+    # splits and task definition (docs/DECISIONS.md, 2026-10-03)
+    n_folds: int = 5
+    val_fold: int = 3
+    test_fold: int = 4
+    binary_window_days: int = 2
+    min_flight_seconds: int = 600
+
     # reproducibility
     random_seed: int = 42
     log_level: str = "INFO"

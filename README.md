@@ -17,3 +17,14 @@ uv run pytest
 uv run python scripts/download_ngafid.py --list   # files in the Zenodo record
 uv run python scripts/download_ngafid.py          # download into data/raw/ngafid (5.4 GB)
 ```
+
+## F1 pipeline (run in this order)
+```bash
+uv run python scripts/make_splits.py      # folds and splits -> data/processed/splits.parquet
+uv run python scripts/audit_channels.py   # channel ranges, quality, phases on 300 flights
+uv run python scripts/make_sample.py      # small extract -> data/sample/
+uv run python scripts/build_features.py   # per-flight features (long)
+uv run python scripts/gate1_signal.py     # Gate 1 on the val split
+```
+
+Data: NGAFID maintenance dataset, Yang et al. 2022, Zenodo 6624956, CC BY 4.0.

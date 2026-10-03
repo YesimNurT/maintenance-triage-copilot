@@ -63,17 +63,21 @@ def flight_level_values(dataset_dir: Path, column: str) -> pd.DataFrame:
 
     Reads two columns, one file at a time, so memory stays small.
     """
-    parts = [_distinct_pairs(path, column) for path in sorted(dataset_dir.glob("*.parquet"))]
+    parts = [
+        read_flight_columns(path, [column]).drop_duplicates()
+        for path in sorted(dataset_dir.glob("*.parquet"))
+    ]
     return pd.concat(parts).drop_duplicates(ignore_index=True)
 
 
-def _distinct_pairs(path: Path, column: str) -> pd.DataFrame:
+def read_flight_columns(path: Path, columns: list[str]) -> pd.DataFrame:
+    """Read ``columns`` plus the flight id from one parquet file."""
     # the flight id is either a stored column or only the pandas index of the file
     stored = FLIGHT_ID in pq.read_schema(path).names
-    table = pq.read_table(path, columns=[FLIGHT_ID, column] if stored else [column]).to_pandas()
+    table = pq.read_table(path, columns=[FLIGHT_ID, *columns] if stored else columns).to_pandas()
     if FLIGHT_ID not in table.columns:
         table = table.rename_axis(FLIGHT_ID).reset_index()
-    return table[[FLIGHT_ID, column]].drop_duplicates()
+    return table[[FLIGHT_ID, *columns]]
 
 
 def _quantiles(sizes: pd.Series) -> dict[str, float]:

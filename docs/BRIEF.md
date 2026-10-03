@@ -1,7 +1,7 @@
 # Maintenance Triage Copilot — Project Brief
 
 ## One line
-NGAFID → leakage-safe temporal health modeling → fleet prioritization → interpretable
+NGAFID → temporal health modeling → fleet prioritization → interpretable
 symptom/residual profile → historical case retrieval → evidence/confidence gate →
 Gemini inspection note → technician approval.
 
@@ -23,10 +23,12 @@ NGAFID aviation maintenance dataset (Yang et al., 2022, arXiv:2210.07317).
 - Paper baselines: ConvMHSA 76.0% binary / 52.8% multiclass; InceptionTime 75.5% / 54.1%.
   Authors report strong overfitting, heavy class imbalance, and that much sensor variance
   is explained by pilot action rather than part condition.
+- Aircraft serial numbers and flight dates were removed for privacy: there is no aircraft
+  id, event id or date (F1 audits, docs/DATA_CARD.md).
 
 ## Architecture
 ```
-NGAFID ──► Data prep (flight phase · quality · leakage-safe split)
+NGAFID ──► Data prep (flight phase · quality · split by flight)
                 │
                 ▼
      GRU/LSTM normal-behaviour model        ┄┄ evaluated vs InceptionTime baseline
@@ -67,11 +69,11 @@ Out (later): electrical/fuel subsystems, all 36 classes, self-supervised pretrai
 SDR/AD knowledge base, real-time streaming, multi-fleet.
 
 ## Phases
-F0 setup · F1 data understanding + leakage-safe split (Gate 1: is there signal?) ·
+F0 setup · F1 data understanding + split (Gate 1: is there signal?) ·
 F2 baselines · F3 normal-behaviour model + health score (Gate 2: beats baseline?) ·
 F4 similar-case search · F5 agent + API + UI · F6 evaluation + AWS · F7 publish.
 
-## Evaluation (all on the same leakage-safe test split)
+## Evaluation (all on the same held-out test split)
 | Component | Metric | Compared with |
 |---|---|---|
 | Health score (flight) | binary accuracy, AUC | InceptionTime, majority class |
@@ -82,7 +84,9 @@ F4 similar-case search · F5 agent + API + UI · F6 evaluation + AWS · F7 publi
 | Detectability | which issue classes leave no sensor trace | hypothesis table |
 
 ## Non-negotiables
-- No flight of the same maintenance event (preferably same aircraft) in two splits.
-- Case retrieval only sees cases dated before the query event.
+- No flight in two splits; benchmark folds reused. The data cannot guarantee that an
+  event or aircraft stays in one split, so this is stated as a limitation and issue-class
+  / retrieval results are reported as upper bounds.
+- Case retrieval only sees training-split cases (the data has no dates).
 - The LLM never sees raw time series and never invents evidence; weak evidence → "inconclusive".
 - Output is decision support, not an airworthiness decision.
