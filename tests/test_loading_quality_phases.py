@@ -27,6 +27,16 @@ def test_load_flights_filters_and_joins_files(tmp_path: Path):
     assert rows["E1 RPM"].tolist() == [2300.0, 2400.0, 2500.0]
 
 
+def test_load_flights_returns_flight_id_stored_as_index(tmp_path: Path):
+    part = pd.DataFrame({"Master Index": [7, 7, 8], "timestep": [1, 0, 0], "OAT": [1.0, 2.0, 3.0]})
+    part.set_index("Master Index").to_parquet(tmp_path / "p0.parquet")
+
+    rows = load_flights(tmp_path, [7], ["OAT"])
+
+    assert rows.columns.tolist() == ["Master Index", "timestep", "OAT"]
+    assert rows["OAT"].tolist() == [2.0, 1.0]
+
+
 def test_batched():
     assert list(batched([1, 2, 3, 4, 5], 2)) == [[1, 2], [3, 4], [5]]
 

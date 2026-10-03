@@ -1,8 +1,10 @@
 """Plausibility checks for sensor values and whole flights.
 
-Ranges are provisional (docs/DECISIONS.md, 2026-10-03) and are checked against the
-channel quantiles from ``scripts/audit_channels.py``. Units follow the Garmin G1000
-export: °F, psi, gal/h, rpm, kt, ft/min, ft, g.
+Ranges were checked against the channel quantiles of 300 random flights
+(``scripts/audit_channels.py``, docs/DECISIONS.md 2026-10-03): at most 0.2% of the values
+of any channel fall outside. Units: CHT, EGT and OilT in °F, OAT in °C, OilP in psi,
+FFlow in gal/h, IAS in kt, VSpd in ft/min, AltMSL in ft, NormAc in g around 0. Lower
+bounds of OilP and IAS leave room for sensor noise around zero.
 """
 
 import pandas as pd
@@ -14,9 +16,9 @@ VALID_RANGES: dict[str, tuple[float, float]] = {
     **{f"E1 EGT{i}": (-40.0, 1800.0) for i in range(1, 5)},
     "E1 RPM": (0.0, 3000.0),
     "E1 OilT": (-40.0, 300.0),
-    "E1 OilP": (0.0, 120.0),
+    "E1 OilP": (-5.0, 120.0),
     "E1 FFlow": (0.0, 30.0),
-    "IAS": (0.0, 200.0),
+    "IAS": (-5.0, 200.0),
     "VSpd": (-4000.0, 4000.0),
     "AltMSL": (-1000.0, 18000.0),
     "OAT": (-60.0, 130.0),

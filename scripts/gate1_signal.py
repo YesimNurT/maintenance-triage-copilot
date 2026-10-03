@@ -9,10 +9,11 @@ import json
 from pathlib import Path
 
 import pandas as pd
+from sklearn.metrics import roc_auc_score
 
 from mtc.config import Settings, get_settings
 from mtc.data.events import FLIGHT_ID
-from mtc.data.features import LENGTH_FEATURES, engine_feature_columns
+from mtc.data.features import LENGTH_FEATURES, engine_feature_columns, feature_groups
 from mtc.models.signal_check import (
     auc_by_group,
     bootstrap_auc_ci,
@@ -57,6 +58,22 @@ def run(settings: Settings) -> Path:
     report["engine_benchmark_flights"] = evaluate(y[bench], score[bench])
     report["engine_auc_by_label"] = auc_by_group(y, score, val["label"])
     report["gate1_passed"] = gate_passes(ci[0], report["length_only"]["auc"])
+
+    # which kind of feature carries the signal (same model, one group at a time)
+    groups = feature_groups(engine)
+    groups["all_but_oil"] = [c for c in engine if c not in groups["oil"]]
+    report["auc_by_feature_group"] = {}
+    for name, columns in groups.items():
+        model = make_model(settings.random_seed).fit(train[columns], train["y"])
+        group_score = model.predict_proba(val[columns])[:, 1]
+        report["auc_by_feature_group"][name] = {
+            "n_features": len(columns),
+            "auc": float(roc_auc_score(y, group_score)),
+        }
+    oil_pressure = data.groupby(["split", "before_after"])["cruise_E1 OilP_mean"].median()
+    report["cruise_oil_pressure_median"] = {
+        f"{split}_{phase}": float(value) for (split, phase), value in oil_pressure.items()
+    }
 
     print(json.dumps(report, indent=2))
     out = settings.results_dir / "f1" / "gate1_signal.json"

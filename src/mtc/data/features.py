@@ -71,6 +71,31 @@ def engine_feature_columns(table: pd.DataFrame) -> list[str]:
     return [c for c in table.columns if c not in excluded]
 
 
+def feature_groups(columns: Sequence[str]) -> dict[str, list[str]]:
+    """Engine features by what they measure, for the Gate 1 ablation.
+
+    ``cylinder_relative`` (deviation of one cylinder from the other three, spread) is the
+    group a single-cylinder symptom would show in; ``rpm_fuel_flow`` and ``phase_shares``
+    mostly reflect how the aircraft was flown.
+    """
+    groups: dict[str, list[str]] = {
+        "phase_shares": [], "rpm_fuel_flow": [], "oil": [],
+        "cylinder_relative": [], "cht_egt_level": [],
+    }
+    for column in columns:
+        if column.endswith("_share"):
+            groups["phase_shares"].append(column)
+        elif "RPM" in column or "FFlow" in column:
+            groups["rpm_fuel_flow"].append(column)
+        elif "Oil" in column:
+            groups["oil"].append(column)
+        elif column.endswith(("_dev", "_spread")):
+            groups["cylinder_relative"].append(column)
+        else:
+            groups["cht_egt_level"].append(column)
+    return groups
+
+
 def _mean(values: pd.Series) -> float:
     return float(values.mean()) if values.notna().any() else np.nan
 

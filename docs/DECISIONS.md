@@ -35,9 +35,30 @@ Format: date · decision · why · evidence / number.
   per-flight summary features (train split) passes if the lower bound of the 95%
   bootstrap CI of val AUC is above 0.55 and above the flight-length-only model. Test
   split stays untouched until F6.
-- 2026-10-03 · Provisional (to be checked with `scripts/audit_channels.py`): plausible
-  value ranges per channel in `src/mtc/data/quality.py`, flight minimum 600 s, phase rules
-  in `src/mtc/data/phases.py`.
+- 2026-10-03 · Value ranges per channel (`src/mtc/data/quality.py`) confirmed; lower
+  bounds of OilP and IAS widened to −5 for noise around zero · on 300 random flights
+  (1.15 M rows) at most 0.2% of a channel was outside (OilP, slightly negative readings);
+  medians CHT 294–307 °F, EGT 1277–1291 °F, RPM 2225 · `results/f1/channel_audit.json`.
+- 2026-10-03 · Minimum flight length 600 s kept · the benchmark's shortest flight is
+  605 s, so this matches the paper; 25% of all flights are shorter than 415 s (probably ground
+  runs, aborted recordings) and 208 of 300 sampled flights pass length + missing checks.
+- 2026-10-03 · Phase rules (`src/mtc/data/phases.py`) kept · row shares on the sample:
+  cruise 47%, ground 28%, descent 13%, climb 12%, none unknown. "Cruise" means level
+  airborne flight and includes traffic-pattern legs.
+- 2026-10-03 · Gate 1 passed by the pre-set rule · val AUC 0.773 (95% CI 0.755–0.792),
+  accuracy 71.0% against 52.4% majority, length-only AUC 0.524; 6,968 train / 2,436 val
+  flights after dropping 2,893 for length or missing values · `results/f1/gate1_signal.json`.
+- 2026-10-03 · Caveat on Gate 1, to be carried into every later result: the signal sits
+  in oil pressure. Oil features alone give AUC 0.677, everything except oil 0.541,
+  cylinder-relative features (the "EGT3 up" kind of symptom) 0.518. Median cruise oil
+  pressure is 70.1 psi after against 68.9 psi before maintenance. Working hypothesis, not
+  verified: maintenance visits include oil servicing, so the model partly detects "recently
+  serviced" rather than "part failing". From F2 on, every model is reported with and
+  without oil channels.
+- 2026-10-03 · Per-label val AUC (labels with at least 20 flights per class): baffle plug
+  0.89, intake tube 0.87, intake gasket 0.84, baffle tie 0.82, baffle crack 0.82, rocker
+  cover 0.80, baffle screw 0.80, cylinder compression 0.74, baffle seal 0.72; engine
+  failure 0.36 and engine run rough 0.35 (below 0.5: the pattern is reversed there).
 
 ## Open
 - MVP issue classes: decide after Gate 1, from per-label val AUC (which classes leave a

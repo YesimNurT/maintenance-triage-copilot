@@ -32,7 +32,11 @@ def load_flights(
         columns=[FLIGHT_ID, TIME, *columns],
         filter=pc.field(FLIGHT_ID).isin(list(flight_ids)),
     )
-    return table.to_pandas().sort_values([FLIGHT_ID, TIME], ignore_index=True)
+    rows = table.to_pandas()
+    if FLIGHT_ID not in rows.columns:
+        # the NGAFID files store the flight id as the pandas index; make it a column again
+        rows = rows.reset_index()
+    return rows.sort_values([FLIGHT_ID, TIME], ignore_index=True)
 
 
 def batched(items: Sequence[int], size: int) -> Iterator[list[int]]:

@@ -45,7 +45,10 @@ def _raw_dataset(raw: Path, n: int = 400) -> None:
         synthetic_flight(i, egt3_offset=(30.0 if i % 2 == 0 else 0.0) + rng.normal(0, 10))
         for i in ids
     ]
-    pd.concat(flights).to_parquet(raw / "all_flights" / "one_parq" / "p0.parquet", index=False)
+    # like the real files: the flight id is stored as the pandas index
+    pd.concat(flights).set_index("Master Index").to_parquet(
+        raw / "all_flights" / "one_parq" / "p0.parquet"
+    )
 
 
 def test_f1_scripts_run_end_to_end(tmp_path: Path, capsys):
@@ -70,4 +73,5 @@ def test_f1_scripts_run_end_to_end(tmp_path: Path, capsys):
     assert report["engine"]["auc"] > 0.9
     assert report["gate1_passed"] is True
     assert set(report["engine_auc_by_label"]) <= {"gasket", "baffle"}
+    assert report["auc_by_feature_group"]["cylinder_relative"]["auc"] > 0.9
     assert "phase share" in capsys.readouterr().out

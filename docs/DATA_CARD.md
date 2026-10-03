@@ -81,22 +81,37 @@ all flights:
 | remaining 26 labels | 6,046 | 20.9% |
 
 ## Quality issues found and how they are handled
-Found so far (handling to be decided in the loading / quality task):
+Found in the audits and how they are handled:
 - 6,504 "same"-day flights: neither clearly before nor after the repair.
 - Very short recordings (minimum 12 s) and very long ones (30,059 s).
 - `2days/stats.csv` shows physically impossible minima (CHT −304, EGT −336, OilT −58,
   RPM 0), so the sensor data contains invalid readings.
+- Channel audit on 300 random flights (2026-10-03): values outside the plausible ranges
+  of `src/mtc/data/quality.py` are rare (at most 0.2% per channel) and are set to missing.
+- Flights shorter than 600 s are dropped (25% of all flights are under 415 s); flights
+  with more than 20% missing engine values are dropped. 208 of 300 sampled flights pass.
+- OAT is in °C (median 7, range −29 to 39); the other temperatures are in °F.
 - `2days/stats.csv` is computed over the whole subset, so it must not be used for
   normalisation (statistics come from the training split only).
 
 ## Flight-phase rules
-Provisional, `src/mtc/data/phases.py`: IAS and VSpd smoothed with a 15 s rolling median;
+`src/mtc/data/phases.py`: IAS and VSpd smoothed with a 15 s rolling median;
 ground if IAS < 50 kt, climb if VSpd > 300 ft/min, descent if VSpd < −300 ft/min,
-otherwise cruise; unknown if either signal is missing. To be checked with
-`scripts/audit_channels.py`.
+otherwise cruise; unknown if either signal is missing. Row shares on 300 flights: cruise
+47%, ground 28%, descent 13%, climb 12%.
 
 ## Split rule and resulting class distribution
 Unit is the flight (docs/DECISIONS.md, 2026-10-03). Benchmark flights keep their fold;
 the others get a seeded random fold stratified by label and before/after. Fold 4 = test,
-fold 3 = val, folds 0–2 = train. Counts per split: `results/f1/splits_summary.json`
-after `scripts/make_splits.py` (to be copied here).
+fold 3 = val, folds 0–2 = train. `scripts/make_splits.py` (2026-10-03) confirmed that all
+11,446 benchmark flights are in the full header with the same label and before/after.
+
+| Split | All flights | Binary task: before | Binary task: after |
+|---|---|---|---|
+| train | 17,366 | 4,334 | 4,527 |
+| val | 5,788 | 1,387 | 1,555 |
+| test | 5,781 | 1,386 | 1,563 |
+
+The binary task has 14,752 flights: the 11,446 benchmark flights plus 3,306 flights in
+the same date window that the benchmark left out (not yet explained; the benchmark keeps
+19 of the 36 labels). Val majority-class accuracy is 52.9%.

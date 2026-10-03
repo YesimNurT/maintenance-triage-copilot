@@ -1,0 +1,13 @@
+Master Index,before_after,date_diff,flight_length,label,hierarchy,number_flights_before,fold,split,in_benchmark,binary_task
+2060,before,-1,5399.0,intake gasket leak/damage,,1,0,train,True,True
+6470,after,2,10504.0,intake gasket leak/damage,,-1,2,train,True,True
+13270,before,-1,4774.0,rocker cover leak/loose/damage,,0,3,val,True,True
+15246,after,2,8357.0,oil cooler need maintenance,oil,-1,0,train,True,True
+24815,before,-2,4511.0,intake gasket leak/damage,,4,4,test,True,True
+25102,before,-2,3977.0,intake gasket leak/damage,,4,4,test,True,True
+26853,before,-1,7478.0,cylinder compression issue,cylinder,0,0,train,True,True
+27311,after,1,6937.0,cylinder compression issue,cylinder,-1,4,test,True,True
+27320,after,1,7883.0,cylinder compression issue,cylinder,-1,4,test,True,True
+30453,before,-1,1787.0,baffle seal loose/damage,baffle,0,3,val,True,True
+32490,after,1,10940.0,baffle crack/damage/loose/miss,baffle,-1,3,val,True,True
+32511,after,1,5166.0,baffle crack/damage/loose/miss,baffle,-1,3,val,True,True

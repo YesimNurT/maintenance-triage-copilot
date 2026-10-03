@@ -10,6 +10,7 @@ from mtc.data.features import (
     LENGTH_FEATURES,
     build_features,
     engine_feature_columns,
+    feature_groups,
     flight_features,
 )
 from mtc.data.loading import CONTEXT_CHANNELS, ENGINE_CHANNELS
@@ -67,6 +68,19 @@ def test_build_features_masks_implausible_values(tmp_path: Path):
 def test_engine_feature_columns_exclude_length_and_quality():
     table = pd.DataFrame(columns=[*LENGTH_FEATURES, "missing_share", "cruise_E1 RPM_mean"])
     assert engine_feature_columns(table) == ["cruise_E1 RPM_mean"]
+
+
+def test_feature_groups_cover_every_engine_feature_once():
+    features = flight_features(synthetic_flight(1).drop(columns=["Master Index", "timestep"]))
+    engine = engine_feature_columns(pd.DataFrame([features]))
+
+    groups = feature_groups(engine)
+
+    assert sorted(c for columns in groups.values() for c in columns) == sorted(engine)
+    assert "cruise_E1 OilP_mean" in groups["oil"]
+    assert "cruise_E1 EGT3_dev" in groups["cylinder_relative"]
+    assert "cruise_E1 EGT3_mean" in groups["cht_egt_level"]
+    assert groups["phase_shares"] == ["climb_share", "cruise_share"]
 
 
 def test_model_and_metrics_on_separable_data():
