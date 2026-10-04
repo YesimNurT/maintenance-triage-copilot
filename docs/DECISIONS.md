@@ -86,7 +86,8 @@ Format: date · decision · why · evidence / number.
   flights) · `results/f2/oil_hypothesis.json`.
 - 2026-10-04 · F2.3 set-up and criterion, fixed before seeing results: InceptionTime on
   the last 4,096 s at 1 Hz, 12 engine + 5 context channels (not the paper's 23), trained on
-  the Mac (MPS); early stopping on 10% of train, val reported, test untouched. Three
+  a Kaggle GPU via `notebooks/kaggle_f2_sequence.ipynb` (the Mac has 8 GB RAM; one MPS
+  step of 32 flights took 1.05 s and 3.4 GB); early stopping on 10% of train, val reported, test untouched. Three
   channel sets: all, without oil (OilT, OilP removed), oil only. Sequence-level signal
   outside oil counts as present if the without-oil val AUC has a 95% CI lower bound
   above 0.55.
