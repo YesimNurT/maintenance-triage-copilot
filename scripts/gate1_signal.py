@@ -12,8 +12,12 @@ import pandas as pd
 from sklearn.metrics import roc_auc_score
 
 from mtc.config import Settings, get_settings
-from mtc.data.events import FLIGHT_ID
-from mtc.data.features import LENGTH_FEATURES, engine_feature_columns, feature_groups
+from mtc.data.features import (
+    LENGTH_FEATURES,
+    binary_task_table,
+    engine_feature_columns,
+    feature_groups,
+)
 from mtc.models.signal_check import (
     auc_by_group,
     bootstrap_auc_ci,
@@ -23,25 +27,23 @@ from mtc.models.signal_check import (
 )
 
 N_BOOT = 1000
-MAX_MISSING = 0.2
 
 
 def run(settings: Settings) -> Path:
     features = pd.read_parquet(settings.processed_dir / "flight_features.parquet")
-    splits = pd.read_parquet(settings.processed_dir / "splits.parquet").set_index(FLIGHT_ID)
-    data = features.join(splits[["split", "before_after", "label", "in_benchmark"]])
-    usable = (data["n_seconds"] >= settings.min_flight_seconds) & (
-        data["missing_share"] <= MAX_MISSING
+    splits = pd.read_parquet(settings.processed_dir / "splits.parquet")
+    data = binary_task_table(
+        features, splits, settings.min_flight_seconds, settings.max_missing_share
     )
-    data = data[usable & data["split"].isin(["train", "val"])]
-    data = data.assign(y=(data["before_after"] == "before").astype(int))
+    n_task = int(splits.loc[splits["split"] != "test", "binary_task"].sum())
+    data = data[data["split"].isin(["train", "val"])]
     train, val = data[data["split"] == "train"], data[data["split"] == "val"]
 
     engine = engine_feature_columns(features)
     report: dict = {
         "n_train": int(len(train)),
         "n_val": int(len(val)),
-        "dropped_by_quality": int((~usable).sum()),
+        "dropped_by_quality_train_val": n_task - len(data),
         "val_before_share": float(val["y"].mean()),
         "majority_accuracy": float(max(val["y"].mean(), 1 - val["y"].mean())),
     }

@@ -71,6 +71,21 @@ def engine_feature_columns(table: pd.DataFrame) -> list[str]:
     return [c for c in table.columns if c not in excluded]
 
 
+def binary_task_table(
+    features: pd.DataFrame, splits: pd.DataFrame, min_seconds: int, max_missing: float
+) -> pd.DataFrame:
+    """Usable binary-task flights with split, label and ``y`` (1 = before maintenance).
+
+    ``splits`` is the table written by ``scripts/make_splits.py``. Flights that are too
+    short or have too many missing engine values are dropped.
+    """
+    meta = splits.set_index(FLIGHT_ID)
+    data = features.join(meta[["split", "before_after", "label", "in_benchmark", "binary_task"]])
+    usable = (data["n_seconds"] >= min_seconds) & (data["missing_share"] <= max_missing)
+    data = data[usable & data["binary_task"]]
+    return data.assign(y=(data["before_after"] == "before").astype(int))
+
+
 def feature_groups(columns: Sequence[str]) -> dict[str, list[str]]:
     """Engine features by what they measure, for the Gate 1 ablation.
 

@@ -1,4 +1,4 @@
-"""End-to-end run of the F1 scripts on a synthetic raw dataset."""
+"""End-to-end run of the F1 and F2.1 scripts on a synthetic raw dataset."""
 
 import importlib.util
 import json
@@ -66,6 +66,9 @@ def test_f1_scripts_run_end_to_end(tmp_path: Path, capsys):
     sample_dir = _script("make_sample").run(settings)
     _script("build_features").run(settings)
     out = _script("gate1_signal").run(settings)
+    features = _script("build_features").run(settings, all_flights=True)
+    trend = _script("f2_oil_hypothesis").run(settings)
+    baselines = _script("f2_tabular_baselines").run(settings)
 
     assert len(pd.read_csv(sample_dir / "header.csv")) == 12
     report = json.loads(out.read_text())
@@ -74,4 +77,9 @@ def test_f1_scripts_run_end_to_end(tmp_path: Path, capsys):
     assert report["gate1_passed"] is True
     assert set(report["engine_auc_by_label"]) <= {"gasket", "baffle"}
     assert report["auc_by_feature_group"]["cylinder_relative"]["auc"] > 0.9
+    assert len(pd.read_parquet(features)) == 400
+    assert json.loads(trend.read_text())["n_flights"] > 0
+    f2 = json.loads(baselines.read_text())
+    assert f2["metrics"]["without_oil"]["gbm"]["auc"] > 0.9
+    assert f2["cht_egt_signal_present"] is True
     assert "phase share" in capsys.readouterr().out

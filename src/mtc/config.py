@@ -27,6 +27,7 @@ class Settings(BaseSettings):
     test_fold: int = 4
     binary_window_days: int = 2
     min_flight_seconds: int = 600
+    max_missing_share: float = 0.2
 
     # reproducibility
     random_seed: int = 42

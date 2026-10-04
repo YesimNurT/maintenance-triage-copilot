@@ -47,7 +47,7 @@ Format: date · decision · why · evidence / number.
   airborne flight and includes traffic-pattern legs.
 - 2026-10-03 · Gate 1 passed by the pre-set rule · val AUC 0.773 (95% CI 0.755–0.792),
   accuracy 71.0% against 52.4% majority, length-only AUC 0.524; 6,968 train / 2,436 val
-  flights after dropping 2,893 for length or missing values · `results/f1/gate1_signal.json`.
+  flights after dropping 2,399 train/val flights for length or missing values · `results/f1/gate1_signal.json`.
 - 2026-10-03 · Caveat on Gate 1, to be carried into every later result: the signal sits
   in oil pressure. Oil features alone give AUC 0.677, everything except oil 0.541,
   cylinder-relative features (the "EGT3 up" kind of symptom) 0.518. Median cruise oil
@@ -59,7 +59,31 @@ Format: date · decision · why · evidence / number.
   0.89, intake tube 0.87, intake gasket 0.84, baffle tie 0.82, baffle crack 0.82, rocker
   cover 0.80, baffle screw 0.80, cylinder compression 0.74, baffle seal 0.72; engine
   failure 0.36 and engine run rough 0.35 (below 0.5: the pattern is reversed there).
+- 2026-10-04 · MVP issue classes: intake gasket leak/damage, rocker cover
+  leak/loose/damage, baffle crack/damage/loose/miss, intake tube/bolt/seal/boot loose or
+  damage, baffle plug need repair/replace · the five largest classes in the val binary
+  task (862, 446, 119, 116, 102 flights); chosen by size, not by AUC, because per-label
+  AUC mostly reflects the oil-pressure effect.
+- 2026-10-04 · F2 starts with the oil hypothesis: first baseline is built with and
+  without oil channels before any sequence model is trained.
+- 2026-10-04 · F2.1 criterion, fixed before seeing results: CHT/EGT signal counts as
+  present if a model without oil features reaches a val AUC whose 95% bootstrap CI lower
+  bound is above 0.55 (logistic regression or gradient boosting on per-flight features).
+- 2026-10-04 · F2.1 result: no CHT/EGT signal in per-flight summaries by the pre-set rule
+  · without oil features val AUC is 0.541 (CI 0.520–0.564) for logistic regression and
+  0.539 (0.516–0.563) for gradient boosting; oil only 0.677 / 0.684; all features 0.773 /
+  0.741 · `results/f2/tabular_baselines.json`.
+- 2026-10-04 · Oil pressure steps at maintenance, it does not drift · median cruise oil
+  pressure 68.97 / 68.83 psi at days −2 / −1 and 70.04 / 70.09 psi at days +1 / +2 (9,404
+  train/val flights). Per label the step is +1.0 to +1.6 psi for gasket, rocker cover,
+  baffle and intake labels and about zero or negative for engine run rough, engine
+  failure, idle/rpm, start and pilot-noticed labels · consistent with the hypothesis that
+  some maintenance visits include oil servicing; still not verified against maintenance
+  records · `results/f2/oil_hypothesis.json`.
 
 ## Open
-- MVP issue classes: decide after Gate 1, from per-label val AUC (which classes leave a
-  sensor trace). Event counts per class are not recoverable.
+- Does a sequence model on 1 Hz data find before/after signal without oil channels
+  (F2.3)? Per-flight summaries do not. If it does not either, the before/after label
+  mostly marks "recently serviced" and the health score scope is revisited.
+- Oil pressure over a wider window (needs `build_features.py --all`): does it decay after
+  maintenance?

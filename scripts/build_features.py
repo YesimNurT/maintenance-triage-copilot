@@ -1,11 +1,14 @@
-"""Per-flight summary features for every binary-task flight (needs make_splits first).
+"""Per-flight summary features (needs make_splits first).
 
-    uv run python scripts/build_features.py
+    uv run python scripts/build_features.py         # binary-task flights
+    uv run python scripts/build_features.py --all   # every flight
 
-Writes data/processed/flight_features.parquet. Reads only the engine and context
+Writes data/processed/flight_features.parquet. Flights already in that file are kept and
+not recomputed, so ``--all`` only adds the missing ones. Reads only the engine and context
 channels of the selected flights, in batches.
 """
 
+import argparse
 import time
 from pathlib import Path
 
@@ -17,18 +20,25 @@ from mtc.data.features import build_features
 from mtc.data.quality import VALID_RANGES
 
 
-def run(settings: Settings) -> Path:
+def run(settings: Settings, all_flights: bool = False) -> Path:
     splits = pd.read_parquet(settings.processed_dir / "splits.parquet")
-    ids = splits.loc[splits["binary_task"], FLIGHT_ID].tolist()
-    print(f"building features for {len(ids)} flights")
-    start = time.perf_counter()
-    table = build_features(settings.ngafid_raw_dir / "all_flights" / "one_parq", ids, VALID_RANGES)
+    wanted = splits if all_flights else splits[splits["binary_task"]]
     out = settings.processed_dir / "flight_features.parquet"
-    table.to_parquet(out)
-    print(f"written {out}: {table.shape[0]} flights x {table.shape[1]} features "
+    done = pd.read_parquet(out) if out.exists() else pd.DataFrame()
+    ids = sorted(set(wanted[FLIGHT_ID]) - set(done.index))
+    print(f"building features for {len(ids)} flights ({len(done)} already done)")
+    start = time.perf_counter()
+    if ids:
+        dataset_dir = settings.ngafid_raw_dir / "all_flights" / "one_parq"
+        new = build_features(dataset_dir, ids, VALID_RANGES)
+        done = pd.concat([done, new]).sort_index().rename_axis(FLIGHT_ID)
+        done.to_parquet(out)
+    print(f"written {out}: {done.shape[0]} flights x {done.shape[1]} features "
           f"in {time.perf_counter() - start:.0f} s")
     return out
 
 
 if __name__ == "__main__":
-    run(get_settings())
+    parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
+    parser.add_argument("--all", action="store_true", help="every flight, not only the binary task")
+    run(get_settings(), all_flights=parser.parse_args().all)
