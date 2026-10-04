@@ -91,8 +91,23 @@ Format: date · decision · why · evidence / number.
   channel sets: all, without oil (OilT, OilP removed), oil only. Sequence-level signal
   outside oil counts as present if the without-oil val AUC has a 95% CI lower bound
   above 0.55.
+- 2026-10-04 · F2.3 result, without oil: no sequence-level signal by the pre-set rule,
+  narrowly · InceptionTime on 15 channels, val AUC 0.570 (95% CI 0.546–0.591), accuracy
+  54.4% against 52.4% majority; best hold-out AUC 0.576 at epoch 7, stopped at epoch 12,
+  training loss 0.698 → 0.681 (chance 0.693). Above chance but weak, and only slightly
+  above the per-flight summaries (0.541) · Kaggle T4 run of
+  `scripts/f2_sequence_baseline.py --channels without_oil`, 6,271 fit / 697 hold-out /
+  2,436 val flights.
+- 2026-10-04 · F2.3 result, all three channel sets (same run, same split) · all 17
+  channels: val AUC 0.779 (0.760–0.796), accuracy 71.2%, used all 30 epochs; oil only (2
+  channels): 0.655 (0.634–0.676), 60.4%, 19 epochs; without oil (15 channels): 0.570
+  (0.546–0.591), 54.4%, 12 epochs. Same picture as the per-flight summaries (0.773 /
+  0.677 / 0.541): the set-up learns when oil is present, so the weak without-oil result is
+  not a training failure.
+- 2026-10-04 · Conclusion of F2: the before/after label is mostly separable through oil
+  pressure, which steps at maintenance. Without oil channels neither summaries nor a
+  sequence model reach the pre-set bar. A health score trained on this label would mainly
+  track servicing, not part condition.
 
 ## Open
-- Does a sequence model on 1 Hz data find before/after signal without oil channels
-  (F2.3)? Per-flight summaries do not. If it does not either, the before/after label
-  mostly marks "recently serviced" and the health score scope is revisited.
+- Project direction after F2 (to be decided with the user before F3).
