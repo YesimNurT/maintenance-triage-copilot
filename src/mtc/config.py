@@ -29,6 +29,17 @@ class Settings(BaseSettings):
     min_flight_seconds: int = 600
     max_missing_share: float = 0.2
 
+    # sequence baseline (F2.3)
+    sequence_length: int = 4096
+    seq_batch_size: int = 32
+    seq_epochs: int = 30
+    seq_patience: int = 5
+    seq_learning_rate: float = 1e-3
+    seq_depth: int = 6
+    seq_filters: int = 32
+    seq_holdout_share: float = 0.1
+    device: str = "auto"
+
     # reproducibility
     random_seed: int = 42
     log_level: str = "INFO"

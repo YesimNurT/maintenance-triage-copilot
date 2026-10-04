@@ -80,10 +80,18 @@ Format: date · decision · why · evidence / number.
   failure, idle/rpm, start and pilot-noticed labels · consistent with the hypothesis that
   some maintenance visits include oil servicing; still not verified against maintenance
   records · `results/f2/oil_hypothesis.json`.
+- 2026-10-04 · Oil pressure over a wider window confirms a step, not a drift · median
+  cruise oil pressure stays at 68.8–69.2 psi from day −6 to −1, is 69.3 on day 0 and
+  70.0–70.7 psi from day +1 to +6 (15,425 usable train/val flights, days with at least 20
+  flights) · `results/f2/oil_hypothesis.json`.
+- 2026-10-04 · F2.3 set-up and criterion, fixed before seeing results: InceptionTime on
+  the last 4,096 s at 1 Hz, 12 engine + 5 context channels (not the paper's 23), trained on
+  the Mac (MPS); early stopping on 10% of train, val reported, test untouched. Three
+  channel sets: all, without oil (OilT, OilP removed), oil only. Sequence-level signal
+  outside oil counts as present if the without-oil val AUC has a 95% CI lower bound
+  above 0.55.
 
 ## Open
 - Does a sequence model on 1 Hz data find before/after signal without oil channels
   (F2.3)? Per-flight summaries do not. If it does not either, the before/after label
   mostly marks "recently serviced" and the health score scope is revisited.
-- Oil pressure over a wider window (needs `build_features.py --all`): does it decay after
-  maintenance?
