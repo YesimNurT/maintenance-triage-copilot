@@ -26,6 +26,7 @@ htmlcov/
 
 # notebooks / editors / OS
 .ipynb_checkpoints/
+.claude/
 .vscode/
 .idea/
 .DS_Store

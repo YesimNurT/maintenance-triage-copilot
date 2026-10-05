@@ -26,6 +26,18 @@ NGAFID aviation maintenance dataset (Yang et al., 2022, arXiv:2210.07317).
 - Aircraft serial numbers and flight dates were removed for privacy: there is no aircraft
   id, event id or date (F1 audits, docs/DATA_CARD.md).
 
+## Status after F5 (2026-10-05)
+Built end to end; claims corrected by what the data showed (docs/DECISIONS.md):
+- The before/after label separates mostly through oil pressure, which steps at
+  maintenance. Outside the oil channels there is little signal, for summaries and for a
+  sequence model alike. The system is therefore presented as an evidence-gated support
+  prototype, not as failure prediction.
+- F3 is a per-flight ridge normal-behaviour model instead of a GRU/LSTM; the deviation
+  score has no ranking value on this data and is described as a deviation measure.
+- Retrieval and issue-class results are upper bounds and do not beat the frequency
+  baseline. The agent says "inconclusive" for about 96% of flights.
+- Open: Gemini-written notes, the one-off test-split evaluation, container and AWS (F6).
+
 ## Architecture
 ```
 NGAFID ──► Data prep (flight phase · quality · split by flight)

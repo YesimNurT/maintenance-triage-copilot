@@ -2,6 +2,7 @@
 
     uv run python scripts/build_features.py         # binary-task flights
     uv run python scripts/build_features.py --all   # every flight
+    uv run python scripts/build_features.py --all --rebuild   # recompute after a feature change
 
 Writes data/processed/flight_features.parquet. Flights already in that file are kept and
 not recomputed, so ``--all`` only adds the missing ones. Reads only the engine and context
@@ -20,11 +21,11 @@ from mtc.data.features import build_features
 from mtc.data.quality import VALID_RANGES
 
 
-def run(settings: Settings, all_flights: bool = False) -> Path:
+def run(settings: Settings, all_flights: bool = False, rebuild: bool = False) -> Path:
     splits = pd.read_parquet(settings.processed_dir / "splits.parquet")
     wanted = splits if all_flights else splits[splits["binary_task"]]
     out = settings.processed_dir / "flight_features.parquet"
-    done = pd.read_parquet(out) if out.exists() else pd.DataFrame()
+    done = pd.read_parquet(out) if out.exists() and not rebuild else pd.DataFrame()
     ids = sorted(set(wanted[FLIGHT_ID]) - set(done.index))
     print(f"building features for {len(ids)} flights ({len(done)} already done)")
     start = time.perf_counter()
@@ -41,4 +42,6 @@ def run(settings: Settings, all_flights: bool = False) -> Path:
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     parser.add_argument("--all", action="store_true", help="every flight, not only the binary task")
-    run(get_settings(), all_flights=parser.parse_args().all)
+    parser.add_argument("--rebuild", action="store_true", help="recompute existing flights too")
+    args = parser.parse_args()
+    run(get_settings(), all_flights=args.all, rebuild=args.rebuild)

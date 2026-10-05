@@ -20,6 +20,8 @@ from mtc.data.quality import mask_out_of_range
 SUMMARY_PHASES = ("climb", "cruise")
 LENGTH_FEATURES = ["n_seconds", "airborne_seconds"]
 QUALITY_FEATURES = ["missing_share"]
+# operating conditions in cruise; inputs of the normal-behaviour model, never "engine" features
+CONTEXT_FEATURES = [f"cruise_{c}_mean" for c in ("OAT", "AltMSL", "IAS")]
 CHT = [f"E1 CHT{i}" for i in range(1, 5)]
 EGT = [f"E1 EGT{i}" for i in range(1, 5)]
 
@@ -38,6 +40,9 @@ def flight_features(flight: pd.DataFrame) -> dict[str, float]:
         for column in ENGINE_CHANNELS:
             features[f"{name}_{column}_mean"] = _mean(part[column])
             features[f"{name}_{column}_std"] = _std(part[column])
+        if name == "cruise":
+            for column in ("OAT", "AltMSL", "IAS"):
+                features[f"cruise_{column}_mean"] = _mean(part[column])
         for group, columns in (("CHT", CHT), ("EGT", EGT)):
             values = part[columns]
             features[f"{name}_{group}_spread"] = _mean(values.max(axis=1) - values.min(axis=1))
@@ -67,7 +72,7 @@ def build_features(
 
 def engine_feature_columns(table: pd.DataFrame) -> list[str]:
     """Columns that describe engine behaviour (everything but length and quality)."""
-    excluded = set(LENGTH_FEATURES) | set(QUALITY_FEATURES)
+    excluded = set(LENGTH_FEATURES) | set(QUALITY_FEATURES) | set(CONTEXT_FEATURES)
     return [c for c in table.columns if c not in excluded]
 
 
@@ -79,11 +84,19 @@ def binary_task_table(
     ``splits`` is the table written by ``scripts/make_splits.py``. Flights that are too
     short or have too many missing engine values are dropped.
     """
-    meta = splits.set_index(FLIGHT_ID)
-    data = features.join(meta[["split", "before_after", "label", "in_benchmark", "binary_task"]])
-    usable = (data["n_seconds"] >= min_seconds) & (data["missing_share"] <= max_missing)
-    data = data[usable & data["binary_task"]]
+    data = usable_flights(features, splits, min_seconds, max_missing)
+    data = data[data["binary_task"]]
     return data.assign(y=(data["before_after"] == "before").astype(int))
+
+
+def usable_flights(
+    features: pd.DataFrame, splits: pd.DataFrame, min_seconds: int, max_missing: float
+) -> pd.DataFrame:
+    """Features joined with split metadata, without flights that fail the quality checks."""
+    columns = ["split", "before_after", "label", "date_diff", "in_benchmark", "binary_task"]
+    data = features.join(splits.set_index(FLIGHT_ID)[columns])
+    usable = (data["n_seconds"] >= min_seconds) & (data["missing_share"] <= max_missing)
+    return data[usable]
 
 
 def feature_groups(columns: Sequence[str]) -> dict[str, list[str]]:

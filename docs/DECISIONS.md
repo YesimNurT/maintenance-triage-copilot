@@ -108,6 +108,107 @@ Format: date · decision · why · evidence / number.
   pressure, which steps at maintenance. Without oil channels neither summaries nor a
   sequence model reach the pre-set bar. A health score trained on this label would mainly
   track servicing, not part condition.
+- 2026-10-05 · F2.3 was run twice on Kaggle; the files in `results/f2/sequence_*.json`
+  are the second run (Save & Run All) · run 2: all 0.773 (0.754–0.791), oil only 0.661
+  (0.639–0.681), without oil 0.557 (0.535–0.577); run 1 (interactive, numbers above):
+  0.779 / 0.655 / 0.570. Same seed, so GPU training is not bit-reproducible; run-to-run
+  difference is about 0.01 AUC and does not change the conclusion (without oil fails the
+  pre-set bar in both runs).
+- 2026-10-05 · F2.2 set-up and criterion, fixed before seeing results: issue class among
+  the five MVP classes from per-flight features, class-weighted logistic regression and
+  gradient boosting, with and without oil features, val split. Trained and evaluated
+  once on "before" flights and once on "after" flights as a control: after the repair the
+  symptom should be gone, so class signal that survives in "after" flights is aircraft /
+  period identity (leakage) rather than a fault symptom. Class signal counts as present
+  if the macro one-vs-rest val AUC on "before" flights has a 95% CI lower bound above
+  0.55, and as symptom-specific only if that lower bound is also above the "after" AUC.
+- 2026-10-05 · F2.2 result: weak issue-class signal, mostly not symptom-specific ·
+  gradient boosting on "before" flights (2,236 train / 772 val, five MVP classes): macro
+  AUC 0.672 (0.642–0.703), balanced accuracy 0.37 (chance 0.20), top-1 35.9% and top-3
+  83.5% against 53.8% and 88.2% for "always the most frequent". Control on "after"
+  flights: macro AUC 0.631 (0.601–0.661). Oil features make no difference (0.674 without).
+  Logistic regression: 0.559 before, 0.561 after · `results/f2/issue_class.json`.
+- 2026-10-05 · Reading of F2.2: the pre-set rule is formally met (lower bound 0.642 above
+  0.55 and above the control's 0.631), but the rule compared a lower bound with a point
+  estimate and the two intervals overlap, so this is not treated as evidence of a fault
+  symptom. About three quarters of the lift over 0.5 is still there after the repair,
+  which points to aircraft / period identity or class-specific confounds. On top-1 and
+  top-3 accuracy the model does not beat the frequency baseline.
+- 2026-10-05 · Direction after F2: keep the architecture, correct the claim (user said to
+  continue on 2026-10-05). The system is presented as an evidence-gated maintenance
+  support prototype, not as failure prediction: the health score is reported with and
+  without oil channels, issue-class and retrieval numbers are upper bounds, and the agent
+  answers "inconclusive" when evidence is weak. The real test of the method needs
+  aircraft ids, dates and maintenance record content, which an operator's data has.
+- 2026-10-05 · F3 is kept thin: the normal-behaviour model is a per-flight ridge
+  regression that predicts cruise CHT, EGT and oil values from how the flight was flown
+  (RPM, fuel flow, phase shares, and OAT / altitude / airspeed once features are rebuilt),
+  trained on post-maintenance train flights only. Residuals are scaled by the healthy
+  residual spread; the health score is their root mean square. No GRU/LSTM for now ·
+  three models already agree that there is little signal outside oil, so a heavier
+  normal-behaviour model is not where the effort pays off.
+- 2026-10-05 · Gate 2 criterion, fixed before seeing results: the unsupervised health
+  score has ranking value if its val AUC (before vs after) has a 95% CI lower bound above
+  0.55; reported with and without oil and next to the supervised baselines (0.773 /
+  0.541) and precision@k against the before-flight base rate. Under the direction above
+  the gate does not block F4–F5; it decides how the score is described.
+- 2026-10-05 · Gate 2 result: the unsupervised health score has no ranking value by the
+  pre-set rule · val AUC 0.515 (0.491–0.538) with all channels and 0.510 (0.486–0.533)
+  without oil; precision@100 0.45 and 0.48 against a 0.476 base rate; 4,722 healthy
+  train flights, 9 condition features (no OAT / altitude / airspeed yet) ·
+  `results/f3/health_score.json`.
+- 2026-10-05 · Diagnostic, not a redefinition of the score: taken one channel at a time
+  and with its sign, only the oil-pressure residual separates the groups (AUC 0.387, i.e.
+  0.613 for "lower than expected"); CHT residuals 0.52–0.54, EGT 0.48–0.49. The root mean
+  square over ten channels ignores direction and dilutes the one channel that carries
+  signal. The score definition is left as fixed beforehand; the agent works from the
+  per-channel residuals, and the score is described as a deviation measure, not a risk.
+- 2026-10-05 · F4 set-up and criterion, fixed before seeing results: a case is a training
+  "before" flight of the binary task; its signature is the vector of ten clipped
+  residuals; similarity is cosine. Evaluation on the five MVP classes: for each val
+  "before" flight take the 10 nearest training cases, rank classes by votes, report top-1
+  and top-3 accuracy next to "always the most frequent", and repeat on "after" flights as
+  the control. Retrieval counts as useful only if its top-1 accuracy has a 95% bootstrap
+  CI lower bound above the frequency baseline. Search runs on a local in-memory index
+  with the same interface as the Pinecone index used in deployment.
+- 2026-10-05 · F4 result: retrieval does not beat the frequency baseline · "before"
+  flights, 2,236 cases / 772 queries, 10 nearest cases: top-1 50.4% (95% CI 46.9–54.3)
+  against 53.8% for "always the most frequent"; top-3 92.9% against 88.2%. Control on
+  "after" flights: top-1 44.0% against 51.2%, top-3 88.5% against 86.1%. With five
+  classes top-3 says little. Consequence for the agent: similar cases are shown as
+  context with their vote share, and the evidence gate needs both a strong residual and
+  agreeing cases before any check is suggested · `results/f4/retrieval.json`.
+- 2026-10-05 · Agent design (F5): the gate and the checks are code, not LLM calls. Gate:
+  largest residual |z| ≥ 3.0, at least 3 similar cases with cosine similarity ≥ 0.6, and
+  the top issue label holding ≥ 50% of those cases; otherwise the note is "inconclusive"
+  and no check is suggested. A drafted note is rejected unless every claim cites known
+  evidence ids (symptoms an R id, checks a C id) and quotes only numbers present in the
+  evidence. Confidence is set by rule from case agreement, never by the model. Gemini only
+  phrases the note; a deterministic template writer is the offline fallback and the test
+  double. Thresholds were chosen as round values before looking at outcomes.
+- 2026-10-05 · Known limit of the citation check: it proves that a claim points at real
+  evidence and invents no numbers, not that the sentence follows from that evidence. That
+  part needs the hand check of notes planned for F6.
+- 2026-10-05 · F5 result with the template writer on 2,436 val flights: the agent stays
+  silent on 96–97% of flights and does not tell the groups apart · note rate 3.0% on
+  "before" flights (35 notes) and 4.0% on "after" flights (51 notes); every produced note
+  passes the citation check; the suggested issue matches the logged one in 49% and 45% of
+  notes. Main stop reasons: residuals within normal range, similar cases disagree ·
+  `results/f5/agent_eval.json`. Gemini-written notes not evaluated yet (needs an API key).
+- 2026-10-05 · CI now installs the agent, api and app extras (still no torch) · the
+  agent, API and Streamlit tests would otherwise be skipped in CI; replaces the
+  2026-10-02 "core + dev only" choice.
+- 2026-10-05 · F3–F5 rerun after rebuilding the features with cruise OAT, altitude and
+  airspeed (12 condition features instead of 9); these numbers replace the first run, the
+  conclusions do not change · F3: score AUC 0.519 (0.497–0.542) with all channels, 0.507
+  (0.485–0.530) without oil, precision@100 0.48 / 0.46; signed oil-pressure residual 0.38
+  (0.62 for "lower than expected"). F4: top-1 50.1% (46.9–53.6) against 53.8%, top-3 93.1%
+  against 88.2%; control 44.8% against 51.2%. F5: note rate 3.8% on "before" flights (44
+  notes) and 4.2% on "after" flights (53 notes), citation validity 100%, suggested issue
+  matches the logged one in 41% and 47% of notes. Gate 1 and F2 tabular results are
+  identical to before, as the context features are not part of the engine feature set.
 
 ## Open
-- Project direction after F2 (to be decided with the user before F3).
+- Gemini-written notes: run `f5_agent_eval.py --llm --limit 40` with an API key, hand-check
+  20 notes.
+- F6: one-off evaluation on the test split, container, AWS. Not started.

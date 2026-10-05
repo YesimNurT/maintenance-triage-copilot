@@ -28,6 +28,13 @@ class Settings(BaseSettings):
     binary_window_days: int = 2
     min_flight_seconds: int = 600
     max_missing_share: float = 0.2
+    mvp_classes: list[str] = [
+        "intake gasket leak/damage",
+        "rocker cover leak/loose/damage",
+        "baffle crack/damage/loose/miss",
+        "intake tube/bolt/seal/boot loose or damage",
+        "baffle plug need repair/replace",
+    ]
 
     # sequence baseline (F2.3)
     sequence_length: int = 4096
@@ -39,6 +46,15 @@ class Settings(BaseSettings):
     seq_filters: int = 32
     seq_holdout_share: float = 0.1
     device: str = "auto"
+
+    # evidence gate of the agent (docs/DECISIONS.md, 2026-10-05)
+    gate_min_z: float = 3.0
+    gate_min_similarity: float = 0.6
+    gate_min_cases: int = 3
+    gate_min_vote_share: float = 0.5
+    retrieval_k: int = 10
+    demo_split: str = "val"  # the test split stays untouched until F6
+    api_url: str = "http://localhost:8000"
 
     # reproducibility
     random_seed: int = 42

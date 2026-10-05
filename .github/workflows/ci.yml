@@ -14,7 +14,8 @@ jobs:
         with:
           enable-cache: true
       - run: uv python install 3.11
-      # core + dev only: no torch / agent extras, tests mock Gemini and Pinecone
-      - run: uv sync --group dev --locked
+      # no torch: the sequence tests skip. Agent, API and UI tests run; Gemini and
+      # Pinecone are never called, tests use fakes
+      - run: uv sync --group dev --extra agent --extra api --extra app --locked
       - run: uv run ruff check .
       - run: uv run pytest

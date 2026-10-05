@@ -107,6 +107,7 @@ def test_binary_task_table_filters_and_labels():
             "Master Index": [1, 2, 3, 4],
             "split": ["train"] * 4,
             "before_after": ["before", "before", "after", "same"],
+            "date_diff": [-1, -1, 1, 0],
             "label": ["gasket"] * 4,
             "in_benchmark": [True] * 4,
             "binary_task": [True, True, True, False],
